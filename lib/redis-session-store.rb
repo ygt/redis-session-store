@@ -13,7 +13,19 @@ require 'redis'
 #    :key_prefix  => Prefix for keys used in Redis, e.g. myapp-. Useful to separate session storage keys visibly from others
 #    :expire_after => A number in seconds to set the timeout interval for the session. Will map directly to expiry in Redis
 #  }
+#  :serializer => Serializer to use on session data, default is :marshal
 class RedisSessionStore < ActionController::Session::AbstractStore
+
+  # Uses built-in JSON library to encode/decode session
+  class JsonSerializer
+    def self.load(value)
+      JSON.parse(value)
+    end
+
+    def self.dump(value)
+      JSON.generate(value)
+    end
+  end
 
   def initialize(app, options = {})
     super
@@ -23,6 +35,7 @@ class RedisSessionStore < ActionController::Session::AbstractStore
     @default_options.merge!(:namespace => 'rack:session')
     @default_options.merge!(redis_options)
     @redis = Redis.new(redis_options)
+    @serializer = determine_serializer(options[:serializer])
   end
 
   private
@@ -51,20 +64,28 @@ class RedisSessionStore < ActionController::Session::AbstractStore
     def load_session_from_redis(sid)
       data = @redis.get(prefixed(sid))
 
-      data ? Marshal.load(data) : nil
+      data ? decode(data) : nil
+    end
+
+    def decode(data)
+      @serializer.load(data)
     end
 
     def set_session(env, sid, session_data)
       options = env['rack.session.options']
       expiry  = options[:expire_after] || nil
       if expiry
-        @redis.setex(prefixed(sid), expiry, Marshal.dump(session_data))
+        @redis.setex(prefixed(sid), expiry, encode(session_data))
       else
-        @redis.set(prefixed(sid), Marshal.dump(session_data))
+        @redis.set(prefixed(sid), encode(session_data))
       end
       return true
     rescue Errno::ECONNREFUSED
       return false
+    end
+
+    def encode(session_data)
+      @serializer.dump(session_data)
     end
 
     def destroy(env)
@@ -73,5 +94,14 @@ class RedisSessionStore < ActionController::Session::AbstractStore
       end
     rescue Errno::ECONNREFUSED
       Rails.logger.warn("RedisSessionStore#destroy: Connection to redis refused")
+    end
+
+    def determine_serializer(serializer)
+      serializer ||= :marshal
+      case serializer
+      when :marshal then Marshal
+      when :json then JsonSerializer
+      else serializer
+      end
     end
 end
