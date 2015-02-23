@@ -20,15 +20,11 @@ class RedisSessionStore < ActionController::Session::AbstractStore
   # Uses built-in JSON library to encode/decode session
   class JsonSerializer
     def self.load(value)
-      decoded_data = Oj.load(ActiveSupport::Base64.decode64(value))
-      Rails.logger.debug decoded_data.inspect
-      decoded_data
+      Oj.load(value)
     end
 
     def self.dump(value)
-      encoded_data = ActiveSupport::Base64.encode64s(Oj.dump(value, :mode => :object))
-      Rails.logger.debug encoded_data.inspect
-      encoded_data
+      Oj.dump(value, :mode => :object)
     end
   end
 
