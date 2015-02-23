@@ -28,4 +28,5 @@ Gem::Specification.new do |gem|
   gem.version       = '0.2.4'
 
   gem.add_dependency 'redis'
+  gem.add_dependency 'oj'
 end

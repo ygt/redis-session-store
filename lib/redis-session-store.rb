@@ -1,4 +1,5 @@
 require 'redis'
+require 'oj'
 
 # Redis session storage for Rails, and for Rails only. Derived from
 # the MemCacheStore code, simply dropping in Redis instead.
@@ -19,11 +20,15 @@ class RedisSessionStore < ActionController::Session::AbstractStore
   # Uses built-in JSON library to encode/decode session
   class JsonSerializer
     def self.load(value)
-      JSON.parse(value)
+      decoded_data = Oj.load(ActiveSupport::Base64.decode64(value))
+      Rails.logger.debug decoded_data.inspect
+      decoded_data
     end
 
     def self.dump(value)
-      JSON.generate(value)
+      encoded_data = ActiveSupport::Base64.encode64s(Oj.dump(value, :mode => :object))
+      Rails.logger.debug encoded_data.inspect
+      encoded_data
     end
   end
 
