@@ -1,5 +1,6 @@
 # vim:fileencoding=utf-8
 require 'redis'
+require 'oj'
 
 # Redis session storage for Rails, and for Rails only. Derived from
 # the MemCacheStore code, simply dropping in Redis instead.
@@ -162,11 +163,11 @@ class RedisSessionStore < ActionDispatch::Session::AbstractStore
   # Uses built-in JSON library to encode/decode session
   class JsonSerializer
     def self.load(value)
-      JSON.parse(value, quirks_mode: true)
+      Oj.load(value)
     end
 
     def self.dump(value)
-      JSON.generate(value, quirks_mode: true)
+      Oj.dump(value, :mode => :object)
     end
   end
 

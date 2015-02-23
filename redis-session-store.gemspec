@@ -20,6 +20,7 @@ Gem::Specification.new do |gem|
 
   gem.add_runtime_dependency 'redis'
   gem.add_runtime_dependency 'actionpack', '>= 3', '< 5'
+  gem.add_runtime_dependency 'oj'
 
   gem.add_development_dependency 'fakeredis'
   gem.add_development_dependency 'rake'
